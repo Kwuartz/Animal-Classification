@@ -8,6 +8,10 @@
 		"ghcr.io/devcontainers/features/nvidia-cuda:1": {
 			"installCudnn": true
 		}
+	},
+	"remoteEnv": {
+		"KAGGLE_USERNAME": "daniyalrai364",
+		"KAGGLE_KEY": "994a0fb5947e8b36d72a9a771a5c2572"
 	}
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
