@@ -7,17 +7,15 @@ import warnings
 warnings.filterwarnings('ignore')
   
 from tensorflow import keras
-from keras import layers
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dropout, Flatten, Dense, BatchNormalization
-from tensorflow.keras.layers import Conv2D, MaxPooling2D
-from tensorflow.keras.utils import image_dataset_from_directory
-from tensorflow.keras.preprocessing import image_dataset_from_directory
+from keras.models import Sequential, load_model
+from keras.layers import Dropout, Flatten, Dense, BatchNormalization
+from keras.layers import Conv2D, MaxPooling2D
+from keras.preprocessing import image, image_dataset_from_directory
   
 import os
 import matplotlib.image as mpimg
 
-trainDirectory = "train_set"
+trainDirectory = "training_set"
 testDirectory = "test_set"
 
 def createModel():
@@ -75,17 +73,35 @@ def trainModel(model):
           epochs=10,
           validation_data=testDatagen
     )
-
+    
     return model, history
 
-def predict(model, image):
-    result = model.predict(image)
+def multiPredict(model, directory, amount=999999):
+    for index, file in enumerate(os.listdir(directory)):
+        if index > amount:
+            break
+
+        testImage = image.load_img(directory + "/" + file, target_size=(200,200))        
+        testImage = image.img_to_array(testImage)
+        testImage = np.expand_dims(testImage,axis=0)
+
+        predict(model, testImage)
+
+def predict(model, testImage):
+    result = model.predict(testImage)
 
     if result >= 0.5:
         print("Dog")
     else:
         print("Cat")
 
+def plotHistory(history):
+    historyDF = pd.DataFrame(history.history)
+    historyDF.loc[:, ['loss', 'val_loss']].plot()
+    historyDF.loc[:, ['accuracy', 'val_accuracy']].plot()
+    plt.show()
+
 model = createModel()
-model, history = trainModel(model)
-model.save("cats-dogs.keras")
+newModel, history = trainModel(model)
+# model = load_model("cats-dogs.keras")
+multiPredict(newModel, "test_set/cats", 100)
