@@ -1,18 +1,88 @@
-from keras.models import load_model
-from keras.preprocessing.image import load_img
-from keras.preprocessing.image import img_to_array
-from keras.applications.vgg16 import preprocess_input
-from keras.applications.vgg16 import decode_predictions
-from keras.applications.vgg16 import VGG16
+import matplotlib.pyplot as plt
+import tensorflow as tf
+import pandas as pd
 import numpy as np
+  
+import warnings
+warnings.filterwarnings('ignore')
+  
+from tensorflow import keras
+from keras import layers
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Activation, Dropout, Flatten, Dense
+from tensorflow.keras.layers import Conv2D, MaxPooling2D
+from tensorflow.keras.utils import image_dataset_from_directory
+from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img
+from tensorflow.keras.preprocessing import image_dataset_from_directory
+  
+import os
+import matplotlib.image as mpimg
 
-from keras.models import load_model
+baseDirectory = 'dog-vs-cat-classification'
 
-model = load_model('cats-dogs.h5')
+def createModel():
+    model = tf.keras.models.Sequential([
+        layers.Conv2D(32, (3, 3), activation='relu', input_shape=(200, 200, 3)),
+        layers.MaxPooling2D(2, 2),
+        layers.Conv2D(64, (3, 3), activation='relu'),
+        layers.MaxPooling2D(2, 2),
+        layers.Conv2D(64, (3, 3), activation='relu'),
+        layers.MaxPooling2D(2, 2),
+        layers.Conv2D(64, (3, 3), activation='relu'),
+        layers.MaxPooling2D(2, 2),
+    
+        layers.Flatten(),
+        layers.Dense(512, activation='relu'),
+        layers.BatchNormalization(),
+        layers.Dense(512, activation='relu'),
+        layers.Dropout(0.1),
+        layers.BatchNormalization(),
+        layers.Dense(512, activation='relu'),
+        layers.Dropout(0.2),
+        layers.BatchNormalization(),
+        layers.Dense(1, activation='sigmoid')
+    ])
+    
+    model.compile(
+        loss='binary_crossentropy',
+        optimizer='adam',
+        metrics=['accuracy']
+    )
 
-image = load_img('v_data/test/planes/5.jpg', target_size=(224, 224))
-img = np.array(image)
-img = img / 255.0
-img = img.reshape(1,224,224,3)
-label = model.predict(img)
-print("Predicted Class (0 - Cars , 1- Planes): ", label[0][0])
+    return model
+
+def trainModel(model):
+    trainDatagen = image_dataset_from_directory(
+        baseDirectory,
+        image_size=(200,200),
+        subset='training',
+        seed = 1,
+        validation_split=0.1,
+        batch_size= 32
+    )
+
+    testDatagen = image_dataset_from_directory(
+        baseDirectory,
+        image_size=(200,200),
+        subset='validation',
+        seed = 1,
+        validation_split=0.1,
+        batch_size= 32
+    )
+    
+    history = model.fit(
+          trainDatagen,
+          epochs=10,
+          validation_data=testDatagen
+    )
+
+    return model, history
+
+def predict(model, image):
+    result = model.predict(image)
+
+    if result >= 0.5 then
+        print("Dog")
+    else
+        print("Cat")
+
