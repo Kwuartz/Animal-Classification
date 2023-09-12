@@ -9,38 +9,38 @@ warnings.filterwarnings('ignore')
 from tensorflow import keras
 from keras import layers
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Activation, Dropout, Flatten, Dense
+from tensorflow.keras.layers import Dropout, Flatten, Dense, BatchNormalization
 from tensorflow.keras.layers import Conv2D, MaxPooling2D
 from tensorflow.keras.utils import image_dataset_from_directory
-from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img
 from tensorflow.keras.preprocessing import image_dataset_from_directory
   
 import os
 import matplotlib.image as mpimg
 
-baseDirectory = 'dog-vs-cat-classification'
+trainDirectory = "train_set"
+testDirectory = "test_set"
 
 def createModel():
-    model = tf.keras.models.Sequential([
-        layers.Conv2D(32, (3, 3), activation='relu', input_shape=(200, 200, 3)),
-        layers.MaxPooling2D(2, 2),
-        layers.Conv2D(64, (3, 3), activation='relu'),
-        layers.MaxPooling2D(2, 2),
-        layers.Conv2D(64, (3, 3), activation='relu'),
-        layers.MaxPooling2D(2, 2),
-        layers.Conv2D(64, (3, 3), activation='relu'),
-        layers.MaxPooling2D(2, 2),
+    model = Sequential([
+        Conv2D(32, (3, 3), activation='relu', input_shape=(200, 200, 3)),
+        MaxPooling2D(2, 2),
+        Conv2D(64, (3, 3), activation='relu'),
+        MaxPooling2D(2, 2),
+        Conv2D(64, (3, 3), activation='relu'),
+        MaxPooling2D(2, 2),
+        Conv2D(64, (3, 3), activation='relu'),
+        MaxPooling2D(2, 2),
     
-        layers.Flatten(),
-        layers.Dense(512, activation='relu'),
-        layers.BatchNormalization(),
-        layers.Dense(512, activation='relu'),
-        layers.Dropout(0.1),
-        layers.BatchNormalization(),
-        layers.Dense(512, activation='relu'),
-        layers.Dropout(0.2),
-        layers.BatchNormalization(),
-        layers.Dense(1, activation='sigmoid')
+        Flatten(),
+        Dense(512, activation='relu'),
+        BatchNormalization(),
+        Dense(512, activation='relu'),
+        Dropout(0.1),
+        BatchNormalization(),
+        Dense(512, activation='relu'),
+        Dropout(0.2),
+        BatchNormalization(),
+        Dense(1, activation='sigmoid')
     ])
     
     model.compile(
@@ -53,7 +53,7 @@ def createModel():
 
 def trainModel(model):
     trainDatagen = image_dataset_from_directory(
-        baseDirectory,
+        trainDirectory,
         image_size=(200,200),
         subset='training',
         seed = 1,
@@ -62,7 +62,7 @@ def trainModel(model):
     )
 
     testDatagen = image_dataset_from_directory(
-        baseDirectory,
+        trainDirectory,
         image_size=(200,200),
         subset='validation',
         seed = 1,
@@ -81,8 +81,11 @@ def trainModel(model):
 def predict(model, image):
     result = model.predict(image)
 
-    if result >= 0.5 then
+    if result >= 0.5:
         print("Dog")
-    else
+    else:
         print("Cat")
 
+model = createModel()
+model, history = trainModel(model)
+model.save("cats-dogs.keras")
