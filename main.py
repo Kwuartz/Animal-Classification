@@ -101,9 +101,10 @@ def plotHistory(history):
     historyDF.loc[:, ['accuracy', 'val_accuracy']].plot()
     plt.show()
 
+
+model = load_model("cats-dogs.keras")
+multiPredict(model, "test_set/dogs", 100)
+
 model = createModel()
-newModel, history = trainModel(model)
-# model = load_model("cats-dogs.keras")
-multiPredict(newModel, "test_set/cats", 100)
-newModel.save("cats-dogs.keras")
-newModel.save_weights("cats-dogs-weights.h5")
+model.load_weights("cats-dogs-weights.h5")
+multiPredict(model, "test_set/dogs", 100)
