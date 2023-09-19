@@ -2,76 +2,93 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import os
   
 import warnings
 warnings.filterwarnings('ignore')
   
 from tensorflow import keras
 from keras.models import Sequential, load_model
-from keras.layers import Dropout, Flatten, Dense, BatchNormalization
+from keras.preprocessing.image import ImageDataGenerator
+from keras.layers import Dropout, Flatten, Dense, Activation
 from keras.layers import Conv2D, MaxPooling2D
-from keras.preprocessing import image, image_dataset_from_directory
-  
-import os
-import matplotlib.image as mpimg
+from keras.utils import to_categorical
+from keras.preprocessing import image
+from keras import backend as K
 
-trainDirectory = "training_set"
-testDirectory = "test_set"
+trainDirectory = "training_set_small"
+validationDirectory = "test_set_small"
+trainSamples = 800
+validationSamples = 100
+epochs = 10
+batch_size = 16
+img_width, img_height = 224, 224
+
+if K.image_data_format() == 'channels_first':
+    input_shape = (3, img_width, img_height)
+else:
+    input_shape = (img_width, img_height, 3)
 
 def createModel():
-    model = Sequential([
-        Conv2D(32, (3, 3), activation='relu', input_shape=(200, 200, 3)),
-        MaxPooling2D(2, 2),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D(2, 2),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D(2, 2),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D(2, 2),
+    model = Sequential()
+    model.add(Conv2D(32, (2, 2), input_shape=input_shape))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
     
-        Flatten(),
-        Dense(512, activation='relu'),
-        BatchNormalization(),
-        Dense(512, activation='relu'),
-        Dropout(0.1),
-        BatchNormalization(),
-        Dense(512, activation='relu'),
-        Dropout(0.2),
-        BatchNormalization(),
-        Dense(1, activation='sigmoid')
-    ])
+    model.add(Conv2D(32, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
     
-    model.compile(
-        loss='binary_crossentropy',
-        optimizer='adam',
+    model.add(Conv2D(64, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    
+    model.add(Flatten())
+    model.add(Dense(64))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(1))
+    model.add(Activation('sigmoid'))
+
+    model.compile(loss='binary_crossentropy',
+        optimizer='rmsprop',
         metrics=['accuracy']
     )
 
     return model
 
 def trainModel(model):
-    trainDatagen = image_dataset_from_directory(
-        trainDirectory,
-        image_size=(200,200),
-        subset='training',
-        seed = 1,
-        validation_split=0.1,
-        batch_size= 32
+    trainDatagen = ImageDataGenerator(
+        rescale=1. / 255,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True
     )
-
-    testDatagen = image_dataset_from_directory(
-        trainDirectory,
-        image_size=(200,200),
-        subset='validation',
-        seed = 1,
-        validation_split=0.1,
-        batch_size= 32
+ 
+    testDatagen = ImageDataGenerator(
+        rescale=1. / 255
     )
-    
-    history = model.fit(
-          trainDatagen,
-          epochs=10,
-          validation_data=testDatagen
+ 
+    trainGenerator = trainDatagen.flow_from_directory(
+        trainDirectory,
+        target_size=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode='binary'
+    )
+ 
+    validationGenerator = testDatagen.flow_from_directory(
+        validationDirectory,
+        target_size=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode='binary'
+    )
+ 
+    history = model.fit_generator(
+        trainGenerator,
+        steps_per_epoch=trainSamples // batch_size,
+        epochs=epochs,
+        validation_data=validationGenerator,
+        validation_steps=validationSamples // batch_size
     )
     
     return model, history
@@ -81,7 +98,7 @@ def multiPredict(model, directory, amount=999999):
         if index > amount:
             break
 
-        testImage = image.load_img(directory + "/" + file, target_size=(200,200))        
+        testImage = image.load_img(directory + "/" + file, target_size=(224,224))        
         testImage = image.img_to_array(testImage)
         testImage = np.expand_dims(testImage,axis=0)
 
@@ -89,22 +106,19 @@ def multiPredict(model, directory, amount=999999):
 
 def predict(model, testImage):
     result = model.predict(testImage)
-
-    if result >= 0.5:
-        print("Dog")
-    else:
-        print("Cat")
+    print(result)
 
 def plotHistory(history):
     historyDF = pd.DataFrame(history.history)
     historyDF.loc[:, ['loss', 'val_loss']].plot()
     historyDF.loc[:, ['accuracy', 'val_accuracy']].plot()
-    plt.show()
+    plt.savefig("history2.png")
 
+#model = createModel()
+#newModel, history = trainModel(model)
+#newModel.save("catsDogsV2.keras")
+#plotHistory(history)
 
-model = load_model("cats-dogs.keras")
-multiPredict(model, "test_set/dogs", 100)
-
-model = createModel()
-model.load_weights("cats-dogs-weights.h5")
-multiPredict(model, "test_set/dogs", 100)
+modelV1 = load_model("catDogsV1.keras")
+modelV2 = load_model("catsDogsV2.keras")
+multiPredict(model, "test_set_big/dogs", 100)
