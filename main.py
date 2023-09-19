@@ -16,11 +16,11 @@ from keras.utils import to_categorical
 from keras.preprocessing import image
 from keras import backend as K
 
-trainDirectory = "training_set_small"
+trainDirectory = "training_set_big"
 validationDirectory = "test_set_small"
-trainSamples = 800
+trainSamples = 8000
 validationSamples = 100
-epochs = 10
+epochs = 15
 batch_size = 16
 img_width, img_height = 224, 224
 
@@ -106,19 +106,36 @@ def multiPredict(model, directory, amount=999999):
 
 def predict(model, testImage):
     result = model.predict(testImage)
+
+    if result > 0.5:
+        print("Dog")
+    else:
+        print("Cat")
+
     print(result)
 
 def plotHistory(history):
     historyDF = pd.DataFrame(history.history)
     historyDF.loc[:, ['loss', 'val_loss']].plot()
     historyDF.loc[:, ['accuracy', 'val_accuracy']].plot()
-    plt.savefig("history2.png")
+    plt.savefig("historyV3.png")
 
-#model = createModel()
-#newModel, history = trainModel(model)
-#newModel.save("catsDogsV2.keras")
-#plotHistory(history)
+model = createModel()
+newModel, history = trainModel(model)
+newModel.save("catsDogsV3.keras")
+plotHistory(history)
 
-modelV1 = load_model("catDogsV1.keras")
-modelV2 = load_model("catsDogsV2.keras")
-multiPredict(model, "test_set_big/dogs", 100)
+#testDatagen = ImageDataGenerator(
+#    rescale=1. / 255
+#)
+
+#validationGenerator = testDatagen.flow_from_directory(
+#    validationDirectory,
+#    target_size=(img_width, img_height),
+#    batch_size=batch_size,
+#    class_mode='binary'
+#)
+
+#score = modelV2.evaluate(validationGenerator, verbose = 0) 
+#print('Test loss:', score[0]) 
+#print('Test accuracy:', score[1])
