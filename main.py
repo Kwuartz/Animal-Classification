@@ -3,8 +3,10 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 import time
+import random
 import os
-  
+import math
+
 import warnings
 warnings.filterwarnings('ignore')
   
@@ -17,11 +19,11 @@ from keras.utils import to_categorical
 from keras.preprocessing import image
 from keras import backend as K
 
-trainDirectory = "training_set_big"
-validationDirectory = "test_set_big"
+trainDirectory = "training_set_small"
+validationDirectory = "test_set_small"
 trainSamples = 800
 validationSamples = 100
-epochs = 15
+epochs = 11
 batch_size = 16
 img_width, img_height = 224, 224
 
@@ -48,10 +50,10 @@ def createModel():
     model.add(Dense(64))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(1))
-    model.add(Activation('sigmoid'))
+    model.add(Dense(2))
+    model.add(Activation('softmax'))
 
-    model.compile(loss='binary_crossentropy',
+    model.compile(loss='categorical_crossentropy',
         optimizer='rmsprop',
         metrics=['accuracy']
     )
@@ -74,14 +76,14 @@ def trainModel(model):
         trainDirectory,
         target_size=(img_width, img_height),
         batch_size=batch_size,
-        class_mode='binary'
+        class_mode='categorical'
     )
  
     validationGenerator = testDatagen.flow_from_directory(
         validationDirectory,
         target_size=(img_width, img_height),
         batch_size=batch_size,
-        class_mode='binary'
+        class_mode='categorical'
     )
  
     history = model.fit_generator(
@@ -94,37 +96,51 @@ def trainModel(model):
     
     return model, history
 
-def multiPredict(model, directory, amount=999999):
-    for index, file in enumerate(os.listdir(directory)):
-        if index > amount:
+def multiPredict(model,  amount=math.inf):
+    classesDirectories = os.listdir(validationDirectory)
+    imageDirectories = []
+
+    for classDirectory in classesDirectories:
+        imagesInClass = [validationDirectory + "/" + classDirectory + "/" + imageDirectory for imageDirectory in os.listdir(validationDirectory + "/" + classDirectory)]
+        imageDirectories += imagesInClass
+
+    amount = min(amount, len(imageDirectories))
+    selectedImageDirectories = random.sample(imageDirectories, amount)
+    print(selectedImageDirectories)
+
+    fig = plt.figure(figsize=(10, 7))
+    rows = columns = math.ceil(math.sqrt(amount))
+
+    for index, imageDirectory in enumerate(selectedImageDirectories):
+        if index + 1 > amount:
             break
         
         try:
-            testImage = image.load_img(directory + "/" + file, target_size=(224,224))      
+            testImage = image.load_img(imageDirectory, target_size=(224,224))      
         except:
-            print("Corrupted image:", directory + "/" + file)
+            print("Corrupted image:", imageDirectory)
             time.sleep(1)
             return
           
-        testImage = image.img_to_array(testImage)
-        testImage = np.expand_dims(testImage,axis=0)
+        predictImage = image.img_to_array(testImage)
+        predictImage = np.expand_dims(predictImage, axis=0)
 
-        predict(model, testImage)
+        title = predict(model, predictImage)
+
+        fig.add_subplot(rows, columns, index + 1)
+        plt.imshow(testImage)
+        plt.axis("off")
+        plt.title(title)
+
+    plt.savefig(f"predictionsV{version}.png")
 
 def predict(model, testImage):
-    result = model.predict(testImage)
-
-    if result > 0.5:
-        print("Dog")
-
-        result = (result - 0.5) * 200
-        print(str(result) + "% confidence")
+    predictions = model.predict(testImage)[0]
+    
+    if predictions[0] > predictions[1]:  
+        return "Cat - Confidence: %" + str(predictions[0] * 100)
     else:
-        print("Cat")
-        result = result * 100
-        print(str(result) + "% confidence")
-
-    print()
+        return "Dog - Confidence: %" + str(predictions[1] * 100)
 
 def evaluateModel(model):
     testDatagen = ImageDataGenerator(
@@ -143,15 +159,21 @@ def evaluateModel(model):
     print('Test accuracy:', score[1])
 
 def plotHistory(history):
+    plt.figure()
     historyDF = pd.DataFrame(history.history)
     historyDF.loc[:, ['loss', 'val_loss']].plot()
-    plt.savefig("lossV4.png")
+    plt.savefig(f"lossV{version}.png")
+
+    plt.figure()
     historyDF.loc[:, ['accuracy', 'val_accuracy']].plot()
-    plt.savefig("accuracyV4.png")
+    plt.savefig(f"accuracyV{version}.png")
+
+version = 5
 
 #model = createModel()
 #newModel, history = trainModel(model)
-#newModel.save("catsDogsV4.keras")
+#newModel.save("catsDogsV5.keras")
 #plotHistory(history)
 
-model = load_model("catsDogsV3.keras")
+model = load_model(f"catsDogsV{version}.keras")
+multiPredict(model, 9)
