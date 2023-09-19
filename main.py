@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import time
 import os
   
 import warnings
@@ -17,8 +18,8 @@ from keras.preprocessing import image
 from keras import backend as K
 
 trainDirectory = "training_set_big"
-validationDirectory = "test_set_small"
-trainSamples = 8000
+validationDirectory = "test_set_big"
+trainSamples = 800
 validationSamples = 100
 epochs = 15
 batch_size = 16
@@ -97,8 +98,14 @@ def multiPredict(model, directory, amount=999999):
     for index, file in enumerate(os.listdir(directory)):
         if index > amount:
             break
-
-        testImage = image.load_img(directory + "/" + file, target_size=(224,224))        
+        
+        try:
+            testImage = image.load_img(directory + "/" + file, target_size=(224,224))      
+        except:
+            print("Corrupted image:", directory + "/" + file)
+            time.sleep(1)
+            return
+          
         testImage = image.img_to_array(testImage)
         testImage = np.expand_dims(testImage,axis=0)
 
@@ -109,33 +116,42 @@ def predict(model, testImage):
 
     if result > 0.5:
         print("Dog")
+
+        result = (result - 0.5) * 200
+        print(str(result) + "% confidence")
     else:
         print("Cat")
+        result = result * 100
+        print(str(result) + "% confidence")
 
-    print(result)
+    print()
+
+def evaluateModel(model):
+    testDatagen = ImageDataGenerator(
+        rescale=1. / 255
+    )
+
+    validationGenerator = testDatagen.flow_from_directory(
+        validationDirectory,
+        target_size=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode='binary'
+    )
+
+    score = model.evaluate(validationGenerator, verbose = 0) 
+    print('Test loss:', score[0]) 
+    print('Test accuracy:', score[1])
 
 def plotHistory(history):
     historyDF = pd.DataFrame(history.history)
     historyDF.loc[:, ['loss', 'val_loss']].plot()
+    plt.savefig("lossV4.png")
     historyDF.loc[:, ['accuracy', 'val_accuracy']].plot()
-    plt.savefig("historyV3.png")
+    plt.savefig("accuracyV4.png")
 
-model = createModel()
-newModel, history = trainModel(model)
-newModel.save("catsDogsV3.keras")
-plotHistory(history)
+#model = createModel()
+#newModel, history = trainModel(model)
+#newModel.save("catsDogsV4.keras")
+#plotHistory(history)
 
-#testDatagen = ImageDataGenerator(
-#    rescale=1. / 255
-#)
-
-#validationGenerator = testDatagen.flow_from_directory(
-#    validationDirectory,
-#    target_size=(img_width, img_height),
-#    batch_size=batch_size,
-#    class_mode='binary'
-#)
-
-#score = modelV2.evaluate(validationGenerator, verbose = 0) 
-#print('Test loss:', score[0]) 
-#print('Test accuracy:', score[1])
+model = load_model("catsDogsV3.keras")
