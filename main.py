@@ -168,12 +168,12 @@ def plotHistory(history):
     historyDF.loc[:, ['accuracy', 'val_accuracy']].plot()
     plt.savefig(f"accuracyV{version}.png")
 
-version = 5
+version = 3
 
 #model = createModel()
 #newModel, history = trainModel(model)
-#newModel.save("catsDogsV5.keras")
+#newModel.save(f"catsDogsV{version}.keras")
 #plotHistory(history)
 
 model = load_model(f"catsDogsV{version}.keras")
-multiPredict(model, 20)
+multiPredict(model, 100)
