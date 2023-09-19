@@ -108,7 +108,7 @@ def multiPredict(model,  amount=math.inf):
     selectedImageDirectories = random.sample(imageDirectories, amount)
     print(selectedImageDirectories)
 
-    fig = plt.figure(figsize=(10, 7))
+    fig = plt.figure(figsize=(20, 14))
     rows = columns = math.ceil(math.sqrt(amount))
 
     for index, imageDirectory in enumerate(selectedImageDirectories):
@@ -176,4 +176,4 @@ version = 5
 #plotHistory(history)
 
 model = load_model(f"catsDogsV{version}.keras")
-multiPredict(model, 9)
+multiPredict(model, 20)
