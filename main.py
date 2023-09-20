@@ -19,10 +19,10 @@ from keras.utils import to_categorical
 from keras.preprocessing import image
 from keras import backend as K
 
-trainDirectory = "training_set_small"
-validationDirectory = "test_set_small"
-trainSamples = 800
-validationSamples = 100
+trainDirectory = "training_set_big"
+validationDirectory = "test_set_big"
+trainSamples = 8005
+validationSamples = 2023
 epochs = 11
 batch_size = 16
 img_width, img_height = 224, 224
@@ -50,7 +50,7 @@ def createModel():
     model.add(Dense(64))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(2))
+    model.add(Dense(len(classes)))
     model.add(Activation('softmax'))
 
     model.compile(loss='categorical_crossentropy',
@@ -106,9 +106,8 @@ def multiPredict(model,  amount=math.inf):
 
     amount = min(amount, len(imageDirectories))
     selectedImageDirectories = random.sample(imageDirectories, amount)
-    print(selectedImageDirectories)
 
-    fig = plt.figure(figsize=(20, 14))
+    fig = plt.figure(figsize=(20, 20))
     rows = columns = math.ceil(math.sqrt(amount))
 
     for index, imageDirectory in enumerate(selectedImageDirectories):
@@ -130,17 +129,15 @@ def multiPredict(model,  amount=math.inf):
         fig.add_subplot(rows, columns, index + 1)
         plt.imshow(testImage)
         plt.axis("off")
-        plt.title(title)
+        plt.title(title, fontsize=50 / rows)
 
     plt.savefig(f"predictionsV{version}.png")
 
 def predict(model, testImage):
-    predictions = model.predict(testImage)[0]
-    
-    if predictions[0] > predictions[1]:  
-        return "Cat - Confidence: %" + str(predictions[0] * 100)
-    else:
-        return "Dog - Confidence: %" + str(predictions[1] * 100)
+    predictions = model.predict(testImage)[0].tolist()
+    predicted = predictions.index(max(predictions))
+
+    return classes[predicted][:-1].capitalize() + " - Confidence: %" + str(predictions[predicted] * 100)
 
 def evaluateModel(model):
     testDatagen = ImageDataGenerator(
@@ -168,7 +165,8 @@ def plotHistory(history):
     historyDF.loc[:, ['accuracy', 'val_accuracy']].plot()
     plt.savefig(f"accuracyV{version}.png")
 
-version = 3
+version = 6
+classes = os.listdir(validationDirectory)
 
 #model = createModel()
 #newModel, history = trainModel(model)
