@@ -13,16 +13,16 @@ warnings.filterwarnings('ignore')
 from tensorflow import keras
 from keras.models import Sequential, load_model
 from keras.preprocessing.image import ImageDataGenerator
-from keras.layers import Dropout, Flatten, Dense, Activation
+from keras.layers import Dropout, Flatten, Dense, BatchNormalization
 from keras.layers import Conv2D, MaxPooling2D
 from keras.utils import to_categorical
 from keras.preprocessing import image
 from keras import backend as K
 
-trainDirectory = "training_set_big"
-validationDirectory = "test_set_big"
-trainSamples = 8005
-validationSamples = 2023
+trainDirectory = "training_set_small"
+validationDirectory = "test_set_small"
+trainSamples = len(os.listdir(trainDirectory))
+validationSamples = len(os.listdir(validationDirectory))
 epochs = 11
 batch_size = 16
 img_width, img_height = 224, 224
@@ -34,24 +34,23 @@ else:
 
 def createModel():
     model = Sequential()
-    model.add(Conv2D(32, (2, 2), input_shape=input_shape))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
     
-    model.add(Conv2D(32, (2, 2)))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    
-    model.add(Conv2D(64, (2, 2)))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    
+    model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=(200, 200, 3)))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Dropout(0.2))
+
+    model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Dropout(0.2))
+
+    model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Dropout(0.2))
+
     model.add(Flatten())
-    model.add(Dense(64))
-    model.add(Activation('relu'))
+    model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
     model.add(Dropout(0.5))
-    model.add(Dense(len(classes)))
-    model.add(Activation('softmax'))
+    model.add(Dense(len(classes), activation='softmax'))
 
     model.compile(loss='categorical_crossentropy',
         optimizer='rmsprop',
@@ -165,7 +164,7 @@ def plotHistory(history):
     historyDF.loc[:, ['accuracy', 'val_accuracy']].plot()
     plt.savefig(f"accuracyV{version}.png")
 
-version = 6
+version = 7
 classes = os.listdir(validationDirectory)
 
 #model = createModel()
