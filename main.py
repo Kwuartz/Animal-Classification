@@ -14,7 +14,7 @@ from tensorflow import keras
 from keras.models import Sequential, load_model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.regularizers import l2
-from keras.layers import Dropout, Flatten, Dense, BatchNormalization, Activation, Conv2D, MaxPooling2D
+from keras.layers import Dropout, Flatten, Dense, BatchNormalization, Conv2D, MaxPooling2D
 from keras.preprocessing import image
 from keras import backend as K
 
