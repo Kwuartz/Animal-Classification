@@ -13,17 +13,23 @@ warnings.filterwarnings('ignore')
 from tensorflow import keras
 from keras.models import Sequential, load_model
 from keras.preprocessing.image import ImageDataGenerator
-from keras.layers import Dropout, Flatten, Dense, BatchNormalization
-from keras.layers import Conv2D, MaxPooling2D
-from keras.utils import to_categorical
+from keras.regularizers import l2
+from keras.layers import Dropout, Flatten, Dense, BatchNormalization, Activation, Conv2D, MaxPooling2D
 from keras.preprocessing import image
 from keras import backend as K
 
-trainDirectory = "training_set_small"
-validationDirectory = "test_set_small"
-trainSamples = len(os.listdir(trainDirectory))
-validationSamples = len(os.listdir(validationDirectory))
-epochs = 11
+version = 8
+
+trainDirectory = "training_set_big"
+validationDirectory = "test_set_big"
+classes = os.listdir(validationDirectory)
+
+trainSamples = validationSamples = 0
+for imageClass in classes:
+    trainSamples += len(os.listdir(trainDirectory + "/" + imageClass))
+    validationSamples += len(os.listdir(validationDirectory + "/" + imageClass))
+
+epochs = 15
 batch_size = 16
 img_width, img_height = 224, 224
 
@@ -33,27 +39,23 @@ else:
     input_shape = (img_width, img_height, 3)
 
 def createModel():
-    model = Sequential()
-    
-    model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=(200, 200, 3)))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Dropout(0.2))
+    model = Sequential([
+        Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=input_shape),
+        MaxPooling2D((2, 2)),
 
-    model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Dropout(0.2))
+        Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'),
+        MaxPooling2D((2, 2)),
 
-    model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Dropout(0.2))
+        Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'),
+        MaxPooling2D((2, 2)),
 
-    model.add(Flatten())
-    model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
-    model.add(Dropout(0.5))
-    model.add(Dense(len(classes), activation='softmax'))
+        Flatten(),
+        Dense(128, activation='relu', kernel_initializer='he_uniform'),
+        Dense(len(classes), activation="softmax")
+    ])
 
     model.compile(loss='categorical_crossentropy',
-        optimizer='rmsprop',
+        optimizer='adam',
         metrics=['accuracy']
     )
 
@@ -164,13 +166,10 @@ def plotHistory(history):
     historyDF.loc[:, ['accuracy', 'val_accuracy']].plot()
     plt.savefig(f"accuracyV{version}.png")
 
-version = 7
-classes = os.listdir(validationDirectory)
+model = createModel()
+newModel, history = trainModel(model)
+newModel.save(f"catsDogsV{version}.keras")
+plotHistory(history)
 
-#model = createModel()
-#newModel, history = trainModel(model)
-#newModel.save(f"catsDogsV{version}.keras")
-#plotHistory(history)
-
-model = load_model(f"catsDogsV{version}.keras")
-multiPredict(model, 100)
+#model = load_model(f"catsDogsV{version}.keras")
+#multiPredict(model, 100)
