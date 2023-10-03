@@ -15,6 +15,7 @@ from keras.models import Sequential, load_model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.regularizers import l2
 from keras.layers import Dropout, Flatten, Dense, BatchNormalization, Conv2D, MaxPooling2D
+from keras.optimizers import Adam, SGD
 from keras.preprocessing import image
 from keras import backend as K
 
@@ -42,20 +43,24 @@ def createModel():
     model = Sequential([
         Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=input_shape),
         MaxPooling2D((2, 2)),
+        Dropout(0.1),
 
         Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'),
         MaxPooling2D((2, 2)),
+        Dropout(0.1),
 
         Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'),
         MaxPooling2D((2, 2)),
+        Dropout(0.1),
 
         Flatten(),
         Dense(128, activation='relu', kernel_initializer='he_uniform'),
+        Dropout(0.5),
         Dense(len(classes), activation="softmax")
     ])
 
     model.compile(loss='categorical_crossentropy',
-        optimizer='adam',
+        optimizer=SGD(learning_rate=0.001, momentum=0.9),
         metrics=['accuracy']
     )
 
