@@ -19,7 +19,7 @@ from keras.optimizers import Adam, SGD
 from keras.preprocessing import image
 from keras import backend as K
 
-version = 8
+version = 9
 
 trainDirectory = "training_set_big"
 validationDirectory = "test_set_big"
@@ -55,7 +55,7 @@ def createModel():
 
         Flatten(),
         Dense(128, activation='relu', kernel_initializer='he_uniform'),
-        Dropout(0.5),
+        Dropout(0.4),
         Dense(len(classes), activation="softmax")
     ])
 
