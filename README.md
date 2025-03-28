@@ -4,3 +4,6 @@
 - Python
 - TensorFlow
 - Keras
+
+## Predictions
+![Predictions](predictions/predictionsV6.png)
